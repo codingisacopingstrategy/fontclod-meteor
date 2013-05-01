@@ -373,7 +373,7 @@ Fontclod = (function() {
 	};
 })();
 	
-$(function() {
+Meteor.startup(function() {
 	if (location.host == 'localhost' || location.host == '10.42.0.1')
 		$('#support-us').remove();
 

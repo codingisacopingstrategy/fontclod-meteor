@@ -247,11 +247,11 @@ canvas {
 		margin: 5px 0 0 5px;
 	}
 		#glyphs .controls .add-glyph {
-			background: url(images/add.png);
+			background: url(assets/images/add.png);
 		}
 
 		#glyphs .controls .delete-glyph {
-			background: url(images/delete.png);
+			background: url(assets/images/delete.png);
 		}
 
 #version {
