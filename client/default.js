@@ -1,3 +1,27 @@
+Glyphs = new Meteor.Collection("glyphs");
+Meta = new Meteor.Collection("meta");
+
+var glyphsSubscription = Meteor.subscribe("glyphs", function() {
+        glyph = Fontclod.glyph;
+        Session.set('glyph', glyph);
+        Session.set('id', Fontclod.clod.getGlyphByName(glyph)._id );
+     });
+var metaSubscription = Meteor.subscribe("meta");
+
+Template.edit.glyphs = function() {
+    return Glyphs.find().map(function(glyph) {
+        glyph.focus = Session.get('glyph') == glyph.name;
+        return glyph;
+    });
+}
+
+Template.edit.rendered = function() {
+    $(window).trigger('canvas_redraw');
+}
+
+var contoursDep = new Deps.Dependency;
+
+
 Clod = (function() {
     var f, Clod,
         version = 0.1;
@@ -58,55 +82,31 @@ Clod = (function() {
         dirt = {
             data: clod,
 
-            createGlyph: function(glyph) {
-                if (!glyph.name || !/^[a-z_.]+$/i.test(glyph.name))
+            createGlyphByName: function(name, callback) {
+                if (!/^[a-z_.]+$/i.test(name))
                     return false;
 
-                glyph = new Glyph(glyph, clod);
+                Glyphs.insert({
+                                "unicode": -1,
+                                "name": name,
+                                "width": null,
+                                "contours": [],
+                                }, callback);
 
-                Fontclod.trigger('glyphadd', glyph);
-
-                return glyph;
             },
 
-            removeGlyph: function(glyph) {
-                var del = 0;
-
-                if (named.hasOwnProperty(glyph.name))
-                    del += +delete named[glyph.name];
-
-                if (glyph.id != -1 && unicode.hasOwnProperty(glyph.id))
-                    del += +delete unicode[glyph.name];
-
-                if (!!del)
-                    Fontclod.trigger('glyphremove', glyph);
-
-                return !!del;
+            removeGlyphByID: function(id, callback) {
+                Glyphs.remove(id, callback);
             },
 
             getGlyphByName: function(name) {
-                if (!named.hasOwnProperty(name))
-                    return false;
-
-                return named[name];
+                return Glyphs.findOne({"name": name}) || false;
             },
 
-            getGlyphByID: function(id) {
-                if (!unicode.hasOwnProperty(id))
-                    return false;
-
-                return unicode[id];
+            getGlyphByUnicode: function(unicode) {
+                return Glyphs.findOne({"unicode": unicode}) || false;
             }
         };
-
-        if (c.font && c.font.glyphs) {
-            for (name in c.font.glyphs) {
-                if (!c.font.glyphs.hasOwnProperty(name))
-                    continue;
-
-                dirt.createGlyph(c.font.glyphs[name]);
-            }
-        }
 
         return dirt;
     };
@@ -120,7 +120,7 @@ Fontclod = (function() {
     var clod,
         version   = 0.0007,
         build     = 28,
-        glyph     = 's_d_f',
+        glyph     = 'a',
         events    = {
             glyphadd: [],
              glyphremove: [],
@@ -249,8 +249,11 @@ Fontclod = (function() {
             if (/^[a-z_.]+$/i.test(g))
                 glyph = g;
 
-            if (!Fontclod.clod.getGlyphByName(glyph))
-                Fontclod.clod.createGlyph({ name: glyph });
+            Session.set('glyph', glyph);
+            Session.set('id', Fontclod.clod.getGlyphByName(glyph)._id );
+
+            /*if (!Fontclod.clod.getGlyphByName(glyph))
+                Fontclod.clod.createGlyph({ name: glyph });*/ //change
         },
 
         get glyph() {
@@ -262,7 +265,8 @@ Fontclod = (function() {
         },
 
         set contours(contours) {
-            Fontclod.clod.getGlyphByName(glyph).contours = contours;
+            console.log("set contours called");
+            Fontclod.clod.getGlyphByName(glyph).contours = contours; //change
         },
 
         set undo(item) {
@@ -322,14 +326,12 @@ Fontclod = (function() {
         },
 
         save: function() {
-            return JSON.stringify(Fontclod.clod.data);
+            return JSON.stringify({ "glyphs" : Glyphs.find()._getRawObjects(), "meta" : Meta.find()._getRawObjects() });
         },
 
         load: function(c) {
+            // change
             c = JSON.parse(c || '{}');
-
-            if (c.version == 0)
-                c = { version: 0.1, font: { glyphs: { 'dirt': { name: 'dirt', contours: c.contours } } } };
 
             clod = new Clod(c);
             Fontclod.trigger('load');
@@ -604,17 +606,15 @@ Meteor.startup(function() {
         $(this).parent().attr('hidden', '');
     });
 
-    $('.dialog.load .load').live('click', function() {
+    /*$('.dialog.load .load').live('click', function() {
         Fontclod.load($('#load-data').val());
         $(window).trigger('canvas_redraw');
         $(this).parent().attr('hidden', '');
-    });
+    });*/
 
     $('#glyphs ul li').live({
         'click': function() {
             var $this = $(this);
-            $('#glyphs ul li').removeClass('focus');
-            $this.addClass('focus');
             Fontclod.glyph = $this.text();
             $(window).trigger('canvas_redraw');
         },
@@ -645,12 +645,10 @@ Meteor.startup(function() {
                 return;
             }
 
-            glyph.name = name;
-            Fontclod.clod.createGlyph(glyph);
-            console.log($parent.data('glyph'));
-            console.log(Fontclod.clod.removeGlyph({ name: $parent.data('glyph'), id: -1 }));
+            Glyphs.update({"_id" : Session.get('id')},
+                {"$set" : {"name" : name } });
+            Fontclod.glyph = name;
 
-            $parent.text(name).data('glyph', name);
         }
     });
 
@@ -660,57 +658,29 @@ Meteor.startup(function() {
         if (name === null || name.length == 0 || !/^[a-z_.]+$/i.test(name))
             return;
 
-        Fontclod.glyph = name;
-        $(window).trigger('canvas_redraw');
+        Fontclod.clod.createGlyphByName(name, function(){
+            Fontclod.glyph = name;
+            $(window).trigger('canvas_redraw');
+        })
     });
 
     $('.delete-glyph').live('click', function() {
         var $focused = $('#glyphs ul li.focus'),
             $select  = $focused.prev().add($focused.next()).last()
             glyph    = $focused.text();
+            id       = $focused.attr('id');
 
-        $focused.remove();
-
-        if ($select) {
-            $select.addClass('focus');
-            Fontclod.glyph = $select.text();
-        }
-
-        Fontclod.clod.removeGlyph(Fontclod.clod.getGlyphByName(glyph));
-
-        $(window).trigger('canvas_redraw');
-    });
-
-    Fontclod.bind('load glyphadd glyphremove', function() {
-        $('#glyphs ul').empty();
-
-        Object.keys(Fontclod.clod.data.font.glyphs).sort().forEach(function(glyph) {
-            $('#glyphs ul').append($('<li data-glyph="' + glyph + '"/>').text(glyph));
-
-            if (Fontclod.glyph == glyph)
-                $('#glyphs ul li:last').addClass('focus');
+        Fontclod.clod.removeGlyphByID(id, function() {
+            if ($select) {
+                Fontclod.glyph = $select.text();
+            }
+            $(window).trigger('canvas_redraw');
         });
-    });
 
-    $.getJSON('assets/clodifle.json' + (location.host == 'localhost' ? '?site=fontclod' : ''), function(data) {
-        Fontclod.load(JSON.stringify(data));
-        $(window).trigger('resize');
+
     });
 
     $('#version a').html('&' + Fontclod.release + ';' + Math.round(Fontclod.version * 10000));
-
-    $('#clodifle').val(Fontclod.save()).bind({
-        'change keydown': function() {
-            var $this = $(this);
-            setTimeout(function() {
-                Fontclod.load($this.val());
-            }, 0);
-        },
-
-        'focus': function() {
-            $(this).select();
-        }
-    });
 
     $(window).bind({
         'contextmenu': function(event) {
@@ -733,6 +703,7 @@ Meteor.startup(function() {
             });
 
             if (Fontclod.selection.length && mouse.button == 0 && mouse.drag.delta > 3) {
+                // when dragging a point
                 var dx, dy,
                     contours = Fontclod.contours,
                     p = Fontclod.selection.latest;
@@ -745,24 +716,32 @@ Meteor.startup(function() {
                 Fontclod.selection.points.forEach(function(p, i) {
                     if ((p[2] == 2) != (Fontclod.selection.latest[2] == 2)) return;
 
-                    point = contours[p[0]].points[p[1]];
-
-                    contours[p[0]].points[p[1]].splice(
+                    // Dragging the main point:
+                    var point = contours[p[0]].points[p[1]];
+                    point.splice(
                         p[2] * 2, 2,
                         point[ p[2] * 2]      + dx,
                         point[(p[2] * 2) + 1] + dy
                     );
 
                     if (Fontclod.selection.latest[2] == 2) {
-                        contours[p[0]].points[p[1]].splice(
+                        // And drag the control points along:
+                        point.splice(
                             0, 4,
                             point[0] + dx, point[1] + dy,
                             point[2] + dx, point[3] + dy
                         );
                     }
+
+                    // send modified contour to database
+                    var updateObject = {}
+                    updateObject["contours." + p[0] + ".points." + p[1]] = point;
+                    Glyphs.update({"_id" : Session.get('id')},
+                        {"$set" : updateObject});
+                    contoursDep.changed();
                 });
 
-                $(this).trigger('canvas_redraw');
+                //$(this).trigger('canvas_redraw');
             }
         },
 
@@ -1262,4 +1241,14 @@ Meteor.startup(function() {
             }, 0);
         }
     }).trigger('resize');
+
+/* Just triggering the canvas_redraw function when you change the contour doesn’t suffice,
+ * because we also need to update the canvas if another connected user updates the contours */
+Deps.autorun(function () {
+    contoursDep.depend();
+    // debug: console.log("meteor figured out the contours changed!");
+    $(window).trigger('canvas_redraw');
 });
+
+});
+
