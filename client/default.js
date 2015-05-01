@@ -5,6 +5,7 @@ var glyphsSubscription = Meteor.subscribe("glyphs", function() {
         glyph = Fontclod.glyph;
         Session.set('glyph', glyph);
         Session.set('id', Fontclod.clod.getGlyphByName(glyph)._id );
+        $(window).trigger('canvas_redraw');
      });
 var metaSubscription = Meteor.subscribe("meta");
 
@@ -16,10 +17,6 @@ Template.edit.helpers({
                       });
                  }
 });
-
-Template.edit.rendered = function() {
-    $(window).trigger('canvas_redraw');
-}
 
 var contoursDep = new Deps.Dependency;
 
