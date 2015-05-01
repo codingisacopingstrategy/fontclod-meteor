@@ -8,12 +8,14 @@ var glyphsSubscription = Meteor.subscribe("glyphs", function() {
      });
 var metaSubscription = Meteor.subscribe("meta");
 
-Template.edit.glyphs = function() {
-    return Glyphs.find().map(function(glyph) {
-        glyph.focus = Session.get('glyph') == glyph.name;
-        return glyph;
-    });
-}
+Template.edit.helpers({
+    'glyphs' :    function() {
+                      return Glyphs.find().map(function(glyph) {
+                          glyph.focus = Session.get('glyph') == glyph.name;
+                          return glyph;
+                      });
+                 }
+});
 
 Template.edit.rendered = function() {
     $(window).trigger('canvas_redraw');
@@ -544,22 +546,22 @@ Meteor.startup(function() {
         };
 
 
-    $('menu[label=Edit] .undo').live('click', function() {
+    $('menu[label=Edit] .undo').on('click', function() {
         Fontclod.undo();
         $(window).trigger('canvas_redraw');
     });
 
-    $('menu[label=Edit] .redo').live('click', function() {
+    $('menu[label=Edit] .redo').on('click', function() {
         Fontclod.undo(-1);
         $(window).trigger('canvas_redraw');
     });
 
-    $('menu[label=File] .new').live('click', function() {
+    $('menu[label=File] .new').on('click', function() {
         Fontclod.load('{}');
         $(window).trigger('canvas_redraw');
     });
 
-    $('menu[label=File] .save').live('click', function() {
+    $('menu[label=File] .save').on('click', function() {
         $('.dialog.save').removeAttr('hidden');
 
         var indent = 0;
@@ -597,30 +599,30 @@ Meteor.startup(function() {
         $('.dialog.load').attr('hidden', '');
     });
 
-    $('menu[label=File] .load').live('click', function() {
+    $('menu[label=File] .load').on('click', function() {
         $('.dialog.load').removeAttr('hidden');
         $('.dialog.save').attr('hidden', '');
     });
 
-    $('.close-dialog').live('click', function() {
+    $('.close-dialog').on('click', function() {
         $(this).parent().attr('hidden', '');
     });
 
-    /*$('.dialog.load .load').live('click', function() {
+    /*$('.dialog.load .load').on('click', function() {
         Fontclod.load($('#load-data').val());
         $(window).trigger('canvas_redraw');
         $(this).parent().attr('hidden', '');
     });*/
 
-    $('#glyphs ul li').live({
-        'click': function() {
-            var $this = $(this);
+    $('#glyphs ul').on({
+        'click.li': function(e) {
+            var $this = $(e.target);
             Fontclod.glyph = $this.text();
             $(window).trigger('canvas_redraw');
         },
 
-        'dblclick': function() {
-            var $this  = $(this),
+        'dblclick.li': function(e) {
+            var $this  = $(e.target),
                 $input = $('<input/>').val($this.data('glyph'));
 
             $this.empty().append($input);
@@ -628,11 +630,11 @@ Meteor.startup(function() {
         }
     });
 
-    $('#glyphs ul li input').live({
+    $('#glyphs ul li input').on({
         // Gobble click events before they reach the parent
         'dblclick click': function() { return false; },
-        'blur keypress': function() {
-            var $this   = $(this),
+        'blur keypress': function(e) {
+            var $this   = $(e.target),
                 $parent = $this.parent(),
                 name    = $this.val(),
                 glyph   = Fontclod.clod.getGlyphByName($parent.data('glyph'));
@@ -652,7 +654,7 @@ Meteor.startup(function() {
         }
     });
 
-    $('.add-glyph').live('click', function() {
+    $('.add-glyph').on('click', function() {
         var name = prompt('Name your glyph!');
 
         if (name === null || name.length == 0 || !/^[a-z_.]+$/i.test(name))
@@ -664,7 +666,7 @@ Meteor.startup(function() {
         })
     });
 
-    $('.delete-glyph').live('click', function() {
+    $('.delete-glyph').on('click', function() {
         var $focused = $('#glyphs ul li.focus'),
             $select  = $focused.prev().add($focused.next()).last()
             glyph    = $focused.text();

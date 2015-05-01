@@ -1,7 +1,7 @@
 <template name="edit">
     <ul>
         {{#each glyphs}}
-          <li{{#if focus}} class="focus"{{/if}} id="{{_id}}">{{ name }}</li>
+          <li class={{#if focus}}focus{{/if}} id="{{_id}}">{{ name }}</li>
         {{/each}}
     </ul>
 
