@@ -3,7 +3,7 @@
     <meta http-equiv="x-ua-compatible" content="chrome=1">
     <meta name="viewport" content="width=1024">
     <link rel="shortcut icon" href="favicon.ico">
-    <title>Fontclod</title>
+    <title>The invisible hand proof of concept</title>
 <script>document.getElementsByTagName('html')[0].className = 'javascript'; URIprefix = '';</script>
 <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
 </head>
@@ -24,34 +24,10 @@
                 <menu type="toolbar" id="menubar" class="widget">
                     <li>
                         <span id="version">
-                            Fontclod <a href="text/changelog.txt" target="_blank">&alpha;</a>
+                            The invisible hand
                         </span>
                     </li>
-                    <li>
-                        <label>File</label>
-                        <menu label="File">
-                            <!--<button class="new">New</button>-->
-                            <hr>
-                            <button class="save">Save</button>
-                            <button class="load">Load</button>
-                        </menu>
-                    </li>
-                    <li>
-                        <label>Edit</label>
-                        <menu label="Edit">
-                            <button class="undo">Undo</button>
-                            <button class="redo">Redo</button>
-                            <hr hidden>
-                            <button hidden></button>
-                        </menu>
-                    </li>
-                    <li hidden>
-                        <menu label="Node">
-                            <label>Node</label>
-                            <button></button>
-                            <button></button>
-                        </menu>
-                    </li>
+
                 </menu>
                 
                 <dl id="point-data" hidden>
@@ -65,11 +41,13 @@
                 
                 
                 <span id="links">
-                    <a href="about.html" target="_blank">Introduction</a>&nbsp;
-                    <a href="http://typophile.com/node/88181" target="_blank">Discussion</a>
+                    Built with Fontclod and Meteor
                 </span>
                 
-                <iframe id="support-us" src="support-us.html"></iframe>
+                <div id="support-us" src="support-us.html">
+                    The points of this ‘A’ can be tweaked by multiple people at the same time.
+                    Try it with two browsers open.
+                </div>
                 
                 <div id="glyphs" class="widget">
                     {{> edit}}
